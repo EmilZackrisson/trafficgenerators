@@ -37,7 +37,7 @@ static inline u_int64_t realcc(void){
 }
 
 struct timeval *s;
-struct timeval start,data,stop;
+struct timeval start,data_time,stop;
 double runPkts,runPkts_1;
 int size1,noBreak,size2;
 int difference_size,sample_length;
@@ -355,7 +355,7 @@ int main (int argc, char *argv[]) {
      // cout<<PktDept.tv_sec<<"."<<PktDept.tv_usec <<"\n";
 
       if(rc<0)          {
-	printf("%s: cannot send data, Packet N#  %d,  size1 was %d bytes, sender %p \n",argv[0],(int)(di-1), size1,&sender );
+	printf("%s: cannot send data_time, Packet N#  %d,  size1 was %d bytes, sender %p \n",argv[0],(int)(di-1), size1,&sender );
 	close(sd);
 	exit(1);
       }

@@ -34,7 +34,7 @@ void uPause(double noUsec);
 
 uint16_t in_cksum(uint16_t *addr, unsigned len);
 
-#define	DEFDATALEN	(64-ICMP_MINLEN) //56	/* default data length */
+#define	DEFDATALEN	(64-ICMP_MINLEN) //56	/* default data_time length */
 #define	MAXIPLEN	60
 #define	MAXICMPLEN	76
 #define	MAXPACKET	(65536 - 60 - ICMP_MINLEN)/* max packet size1 */
@@ -190,7 +190,7 @@ int ping(int sss,u_int32_t exp, u_int32_t run, u_int32_t key, string target,u_in
   }
   else
   {
-  cout << "No data within one seconds.\n";
+  cout << "No data_time within one seconds.\n";
   return 0;
   }
   }*/

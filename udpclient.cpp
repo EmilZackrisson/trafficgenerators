@@ -43,7 +43,7 @@ static inline u_int64_t realcc(void)
 }
 // provide sample length no. of packets 32 x x x x x .. 32+ sample length.....
 struct timeval *s;
-struct timeval start, data, stop;
+struct timeval start, data_time, stop;
 double runPkts, runPkts_1;
 int size1, noBreak, size2;
 int difference_size, sample_length;
@@ -385,7 +385,7 @@ int main(int argc, char *argv[])
   sprintf(fname_cpu, "%d_%d_send_cpueval.txt", exp_id, run_id);
   if (loglevel > 1)
   {
-    printf("Writes cpu data to %s.\n", fname_cpu);
+    printf("Writes cpu data_time to %s.\n", fname_cpu);
     // CPU_before=estimateCPU(40,100000,fname_cpu);
     TSC_before = realcc();
     gettimeofday(&GTOD_before, NULL);
@@ -395,7 +395,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  printf("%s: Sending data to %s (%s:%d)\n", argv[0], h->h_name, inet_ntoa(*(struct in_addr *)h->h_addr_list[0]), REMOTE_SERVER_PORT);
+  printf("%s: Sending data_time to %s (%s:%d)\n", argv[0], h->h_name, inet_ntoa(*(struct in_addr *)h->h_addr_list[0]), REMOTE_SERVER_PORT);
 
   remoteServAddr.sin_family = h->h_addrtype;
   memcpy((char *)&remoteServAddr.sin_addr.s_addr, h->h_addr_list[0], h->h_length);
@@ -441,8 +441,8 @@ int main(int argc, char *argv[])
   // istart0=0;
   // istop0=0;
 
-  /* send data */
-  s = &data;
+  /* send data_time */
+  s = &data_time;
   gettimeofday(s, NULL);
 
   //    cout<<s->tv_sec<<","<<s->tv_usec<<endl;
@@ -523,7 +523,7 @@ int main(int argc, char *argv[])
         gettimeofday(&PktDept, NULL);
         if (rc < 0)
         {
-          printf("%s: cannot send data %d, error was %d and size1 was %d \n", argv[0], (int)(di - 1), rc, size2);
+          printf("%s: cannot send data_time %d, error was %d and size1 was %d \n", argv[0], (int)(di - 1), rc, size2);
           close(sd);
           exit(1);
         }
@@ -564,7 +564,7 @@ int main(int argc, char *argv[])
         gettimeofday(&PktDept, NULL);
         if (rc < 0)
         {
-          printf("%s: cannot send data %d \n", argv[0], (int)(di - 1));
+          printf("%s: cannot send data_time %d \n", argv[0], (int)(di - 1));
           close(sd);
           exit(1);
         }
@@ -706,7 +706,7 @@ double estimateCPU(int samples, int sleeptime, char *filename)
   float freq;
   double freq_avg = 0;
   unsigned long microseconds, seconds;
-  struct timeval data;
+  struct timeval data_time;
   struct timeval st[100];
   u_int64_t cputime[100];
 
@@ -726,9 +726,9 @@ double estimateCPU(int samples, int sleeptime, char *filename)
 
   for (int i = 0; i < samples; i++)
   {
-    gettimeofday(&data, NULL);
+    gettimeofday(&data_time, NULL);
     cputime[i] = realcc();
-    st[i] = data;
+    st[i] = data_time;
     usleep(sleeptime);
   }
 

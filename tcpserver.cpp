@@ -140,7 +140,7 @@ static struct option long_options[]={
   		printf("-p --port_no 				Port to listen on, default %d\n", LOCAL_SERVER_PORT);
 			printf("-f --freq    				Sample frequency, default 0 -- No sampling.\n");
 			printf("-h   help \n\n");
-			printf("Logs the data into a directory <experiment_id> that must exist, save the data as \n");
+			printf("Logs the data_time into a directory <experiment_id> that must exist, save the data_time as \n");
 			printf("<run_id>_server.txt\n");
 			printf("<run_id>_recv_cpueval.txt\n");
 			printf("The sender <run_id>_send_cpueva.txt must be collected from the sender after experiments completed.\n");
@@ -167,7 +167,7 @@ static struct option long_options[]={
  
  sprintf(fname_cpu,"%d_%d_recvtcp_cpueval.txt",exp_id,run_id);
 
-  printf("Writes cpu data to %s.\n", fname_cpu);
+  printf("Writes cpu data_time to %s.\n", fname_cpu);
   
   CPU_before=estimateCPU(40,100000,fname_cpu);//check point..
   TSC_before=realcc();
@@ -201,7 +201,7 @@ servAddr.sin_family = AF_INET;
   listen(sd,1024);
 //acceptor = accept(listenfd,(struct sockaddr *)&cliaddr,&clilen);
 
-  printf("%s: waiting for data on port TCP %u\n",argv[0],LOCAL_SERVER_PORT);
+  printf("%s: waiting for data_time on port TCP %u\n",argv[0],LOCAL_SERVER_PORT);
   
 
   rstart=0;
@@ -288,7 +288,7 @@ servAddr.sin_family = AF_INET;
 	  rstop=realcc();
 	  gettimeofday(&PktArr,NULL);
 	  if(n<0){
-	    /*  printf("%s: cannot receive data \n",argv[0]); */
+	    /*  printf("%s: cannot receive data_time \n",argv[0]); */
 	    continue;
 	  } else {
 	    if(n<40){
@@ -427,7 +427,7 @@ void output_file(u_int32_t eid,u_int32_t rid, pdudata rpdu[],int sz, double freq
   //  double av_iptr=0,av_ipts=0,av_ipgr=0,av_ipgs=0;
   //double var_iptr=0,var_ipts=0,var_ipgr=0,var_ipgs=0;
   if(sz==0){
-    printf("No data to save.\n");
+    printf("No data_time to save.\n");
     return;
   }
 
@@ -513,7 +513,7 @@ double estimateCPU(int samples, int sleeptime, char *filename){
   float freq;
   double freq_avg=0;
   unsigned long microseconds,seconds;
-  struct timeval data;
+  struct timeval data_time;
   struct timeval st[100];
   u_int64_t cputime[100];
 
@@ -527,9 +527,9 @@ double estimateCPU(int samples, int sleeptime, char *filename){
   printf("Opened file.\n");
 
   for(int i=0;i<samples;i++){
-    gettimeofday(&data,NULL);
+    gettimeofday(&data_time,NULL);
     cputime[i]=realcc();
-    st[i]=data;
+    st[i]=data_time;
     usleep(sleeptime);
 
   }
