@@ -37,7 +37,7 @@ uint16_t in_cksum(uint16_t *addr, unsigned len);
 #define	DEFDATALEN	(64-ICMP_MINLEN) //56	/* default data length */
 #define	MAXIPLEN	60
 #define	MAXICMPLEN	76
-#define	MAXPACKET	(65536 - 60 - ICMP_MINLEN)/* max packet size */
+#define	MAXPACKET	(65536 - 60 - ICMP_MINLEN)/* max packet size1 */
 u_char *packet, outpack[MAXPACKET];
 
 int ping(int sss,u_int32_t exp, u_int32_t run, u_int32_t key, string target,u_int32_t count ,int size_packet)
@@ -295,7 +295,7 @@ struct hostent *h;
 int runType;
 
 double runPkts, runPkts_1;
-int size,noBreak,size1;
+int size1,noBreak,size2;
 int difference_size,sample_length;
 	
 
@@ -334,7 +334,7 @@ int difference_size,sample_length;
   hflag=0;
   runType=0;
   reqFlag=0;
-  size=1224;
+  size1=1224;
   sleepTime=-1;
 
   waittime=0;  
@@ -366,17 +366,17 @@ int difference_size,sample_length;
       runType=1;
       break;
       break;
-    case 'm': /*pkt size distribution*/
+    case 'm': /*pkt size1 distribution*/
       psd=*optarg;
       cout <<" PSD is"<<psd <<"\n" ;
       break;
     case 'l': /*pkt length maxima*/
-      size=atoi(optarg);
-      cout<< "min packet size Size is "<<size <<"\n";
+      size1=atoi(optarg);
+      cout<< "min packet size1 Size is "<<size1 <<"\n";
       break;
    case 'L': /*pkt length maxima*/
-      size1=atoi(optarg);
-      cout<< "Max packet Size is "<<size1 <<"\n";
+      size2=atoi(optarg);
+      cout<< "Max packet Size is "<<size2 <<"\n";
       break;
 
 
@@ -439,25 +439,25 @@ int difference_size,sample_length;
   }
 
 
-  RND* myRND1;// packet size distribution
+  RND* myRND1;// packet size1 distribution
   RND* myRND2; // wait time distribution
   switch(psd){
 	case 'e':
-		printf("Packet size is Expontial...\n");
-		myRND1=new RNDEXP(size1);
+		printf("Packet size1 is Expontial...\n");
+		myRND1=new RNDEXP(size2);
 	break;
 	case 'u':
-		printf("Packet size Uniform...\n");
-		myRND1=new RNDUNIF(size,size1);
+		printf("Packet size1 Uniform...\n");
+		myRND1=new RNDUNIF(size1,size2);
 	break;
 
 	case 'd':
-               printf ("Packet size uniform discrete\n");
-                myRND1 = new RNDUNID(size,size1);
+               printf ("Packet size1 uniform discrete\n");
+                myRND1 = new RNDUNID(size1,size2);
                break;
 	default:
-	printf("Packet size DEfault is to deterministic \n");
-		myRND1=new RNDDET(size1);
+	printf("Packet size1 DEfault is to deterministic \n");
+		myRND1=new RNDDET(size2);
 	 	break;
   }
 
@@ -492,21 +492,21 @@ if ( (si = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
 		perror("socket");	/* probably not running as superuser */
 		return -1;
 	}
-difference_size = size1 -size;
+difference_size = size2 -size1;
   runPkts_1 = floor (((difference_size)*runPkts)/sample_length) + runPkts;
-printf("will run %g pkts for each size.\n",runPkts);
+printf("will run %g pkts for each size1.\n",runPkts);
 	cout <<" Experiment will run an overall of " << runPkts_1 <<"samples";
  while (di < runPkts_1)
 	 {
-//size=int(myRND1->Rnd());
-//cout << size<<"packet size\n";
+//size1=int(myRND1->Rnd());
+//cout << size1<<"packet size1\n";
 waittime = double (myRND2->Rnd());
 //cout<<waittime<<" wait time in microseconds\n";
 
 di++;
 if (int (di) %(int)runPkts == 0)
 	{
-	size = size + sample_length;
+	size1 = size1 + sample_length;
 	//sleep(1);
 	}
       
@@ -515,7 +515,7 @@ if (int (di) %(int)runPkts == 0)
       }
 //cout <<"Packet number  "<<di<<" out of runPkts "<<runPkts<<"\n";// send di..
 counter1 = (u_int32_t) di;
-ping (si,exp_id, run_id, key_id,serverName,counter1,size);
+ping (si,exp_id, run_id, key_id,serverName,counter1,size1);
 uPause(waittime); 
 
 }

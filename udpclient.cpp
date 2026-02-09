@@ -17,7 +17,7 @@
 #include <getopt.h> /* Variable calling of main */
 #include <iostream>
 #include <math.h>
-#include <cstring>/// cggggggggg
+#include <cstring> /// cggggggggg
 #include "udpgen.h"
 #define lent 8 // sizeof double
 #include "rndexp.h"
@@ -27,8 +27,6 @@
 #include "rndunid.h"
 #include "version.h"
 
-
-
 using namespace std;
 
 void uPause(double noUsec);
@@ -36,187 +34,191 @@ void closePrg(int sig);
 void killPrg(int sig);
 void randexpo(double a[], int xxx);
 
-double estimateCPU(int samples, int sleeptime, char* fname);
+double estimateCPU(int samples, int sleeptime, char *fname);
 
-static inline u_int64_t realcc(void){
- u_int64_t cc =  __builtin_ia32_rdtsc();
- return cc;
+static inline u_int64_t realcc(void)
+{
+  u_int64_t cc = __builtin_ia32_rdtsc();
+  return cc;
 }
-//provide sample length no. of packets 32 x x x x x .. 32+ sample length..... 
+// provide sample length no. of packets 32 x x x x x .. 32+ sample length.....
 struct timeval *s;
-struct timeval start,data,stop;
-double runPkts,runPkts_1;
-int size,noBreak,size1;
-int difference_size,sample_length;
+struct timeval start, data, stop;
+double runPkts, runPkts_1;
+int size1, noBreak, size2;
+int difference_size, sample_length;
 
-int main(int argc, char *argv[]) {
-//  double zzz[10000];// added today
-//  int vvv;//added today
-///   vvv = (sizeof(zzz)/lent);//***today
-//randexpo(zzz,vvv);//***
-  int option_index,op,sd, rc, hflag, dflag,REMOTE_SERVER_PORT,reqFlag;
-  double waittime,waittime1,sleepTime,sleepTime1;
+int main(int argc, char *argv[])
+{
+  //  double zzz[10000];// added today
+  //  int vvv;//added today
+  ///   vvv = (sizeof(zzz)/lent);//***today
+  // randexpo(zzz,vvv);//***
+  int option_index, op, sd, rc, hflag, dflag, REMOTE_SERVER_PORT, reqFlag;
+  double waittime, waittime1, sleepTime, sleepTime1;
   //  double linkCapacity;
   struct sockaddr_in cliAddr, remoteServAddr;
   struct sockaddr_in myAddr;
   struct hostent *h;
-  char *serverName=0;
-  u_int32_t exp_id,run_id,key_id;
-  exp_id=run_id=key_id=0;
-  sample_length = -1; 
+  char *serverName = 0;
+  u_int32_t exp_id, run_id, key_id;
+  exp_id = run_id = key_id = 0;
+  sample_length = -1;
   runPkts_1 = 0;
   double CPU_before, CPU_after;
   struct timeval GTOD_before, GTOD_after, PktDept;
-  u_int64_t TSC_before,TSC_after;
-  int loglevel=1;
+  u_int64_t TSC_before, TSC_after;
+  int loglevel = 1;
   int quiet;
   int runType; /* 0= default, forever, 1= nopkts, 2=time */
-  int SOURCE_PORT=0;
-  noBreak=1;
-  //linkCapacity=9600;
-  waittime1= 1000000;
-  char psd, wtd;  
-  psd='z';
-  wtd='z';
-  dflag=0;
-  
-  static struct option long_options[] =  {
-	{"expid ",required_argument,0,'e'},
-	{"keyid ",required_argument,0,'r'},
-	{"runid ",required_argument,0,'k'},
-	{"server",required_argument, 0, 's'},
-	{"port", required_argument,0,'p'},
-	{"pkts", required_argument,0,'n'},
-	{"pktdist", required_argument,0,'m'},	
-	{"pktLenmin", required_argument, 0, 'l'},
-        {"pktLenMax", required_argument, 0, 'L'},
-	{"pktLen",required_argument,0,'a'},
-	{"waitdist", required_argument, 0, 'v'},
-	{"waittime", required_argument, 0, 'i'},
-	{"waittimemin", required_argument, 0, 'w'},
-        {"waittimemax", required_argument, 0, 'W'},
-	{"samplelength", required_argument, 0, 'z'},
-	{"help", required_argument, 0, 'h'},
-	{"sourceport",required_argument,0,'b'},
-	{"quiet", no_argument,0,'q'},
-	{"version", no_argument,0,'V'},
-	{0, 0, 0, 0}
-        };
-  REMOTE_SERVER_PORT=1500;
+  int SOURCE_PORT = 0;
+  noBreak = 1;
+  // linkCapacity=9600;
+  waittime1 = 1000000;
+  char psd, wtd;
+  psd = 'z';
+  wtd = 'z';
+  dflag = 0;
+
+  static struct option long_options[] = {
+      {"expid ", required_argument, 0, 'e'},
+      {"keyid ", required_argument, 0, 'r'},
+      {"runid ", required_argument, 0, 'k'},
+      {"server", required_argument, 0, 's'},
+      {"port", required_argument, 0, 'p'},
+      {"pkts", required_argument, 0, 'n'},
+      {"pktdist", required_argument, 0, 'm'},
+      {"pktLenmin", required_argument, 0, 'l'},
+      {"pktLenMax", required_argument, 0, 'L'},
+      {"pktLen", required_argument, 0, 'a'},
+      {"waitdist", required_argument, 0, 'v'},
+      {"waittime", required_argument, 0, 'i'},
+      {"waittimemin", required_argument, 0, 'w'},
+      {"waittimemax", required_argument, 0, 'W'},
+      {"samplelength", required_argument, 0, 'z'},
+      {"help", required_argument, 0, 'h'},
+      {"sourceport", required_argument, 0, 'b'},
+      {"quiet", no_argument, 0, 'q'},
+      {"version", no_argument, 0, 'V'},
+      {0, 0, 0, 0}};
+  REMOTE_SERVER_PORT = 1500;
 
   /* check command line args, so that we are atleast in the correct "area" */
-  if(argc<1){
-    printf("use %s -h for help\n",argv[0]);
+  if (argc < 1)
+  {
+    printf("use %s -h for help\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
-  hflag=0;
-  quiet=0;
-  runType=0;
-  reqFlag=0;
-  size=1224;
-  sleepTime=-1;
-  size1=1224;
-  waittime=0;  
-  while ( (op =getopt_long(argc, argv, "a:b:qk:e:r:s:p:n:m:l:L:v:i:w:W:z:hDdV",long_options, &option_index))!=EOF) {
-    switch (op){
+  hflag = 0;
+  quiet = 0;
+  runType = 0;
+  reqFlag = 0;
+  size1 = 1224;
+  sleepTime = -1;
+  size2 = 1224;
+  waittime = 0;
+  while ((op = getopt_long(argc, argv, "a:b:qk:e:r:s:p:n:m:l:L:v:i:w:W:z:hDdV", long_options, &option_index)) != EOF)
+  {
+    switch (op)
+    {
     case 'b': /* Set Source port */
-      SOURCE_PORT=atoi(optarg);
+      SOURCE_PORT = atoi(optarg);
       break;
-    case 'e':/*exp_id*/
-      exp_id=(u_int32_t)atoi(optarg);
+    case 'e': /*exp_id*/
+      exp_id = (u_int32_t)atoi(optarg);
       reqFlag++;
       break;
-    case 'r':/*exp_id*/
-      run_id=(u_int32_t)atoi(optarg);
+    case 'r': /*exp_id*/
+      run_id = (u_int32_t)atoi(optarg);
       reqFlag++;
       break;
-    case 'k':/*key_id*/
-      key_id=(u_int32_t)atoi(optarg);
+    case 'k': /*key_id*/
+      key_id = (u_int32_t)atoi(optarg);
       reqFlag++;
       break;
     case 's': /* Server */
-      serverName=optarg;
+      serverName = optarg;
       reqFlag++;
       break;
     case 'V': /* Version */
-      printf("Git: %s \n",build_git_sha);
+      printf("Git: %s \n", build_git_sha);
       printf("Build: %s \n", build_git_time);
       break;
     case 'q': /* Quiet */
-      quiet=1;
+      quiet = 1;
       break;
     case 'p': /* Port number */
-      REMOTE_SERVER_PORT=atoi(optarg);
+      REMOTE_SERVER_PORT = atoi(optarg);
       break;
     case 'n': /* number of pkts per samplesize*/
-      runPkts=atof(optarg);
-      runType=1;
+      runPkts = atof(optarg);
+      runType = 1;
       break;
       break;
-    case 'm': /*pkt size distribution*/
-      psd=*optarg;
+    case 'm': /*pkt size1 distribution*/
+      psd = *optarg;
       /*      cout <<" Packet Size Distribution: ";
       switch (psd){
       case'e':
-	cout << "Exponential.";
-	break;
+  cout << "Exponential.";
+  break;
       case'u':
-	cout << "Uniform.";
-	break;
+  cout << "Uniform.";
+  break;
       case'd':
-	cout << "Uniform Discrete.";
-	break;
+  cout << "Uniform Discrete.";
+  break;
       default:
-	cout << "Discrete.";
-	break;
+  cout << "Discrete.";
+  break;
       }
       cout << "(" << psd <<")\n" ;
       */
       break;
     case 'l': /*pkt length min*/
-      size=atoi(optarg);
-      cout<< "Min packet Size is "<<size <<"\n";
+      size1 = atoi(optarg);
+      cout << "Min packet Size is " << size1 << "\n";
       break;
     case 'L': /*pkt length maximal*/
-      size1=atoi(optarg);
-      cout<< "Max packet Size is "<<size1 <<"\n";
+      size2 = atoi(optarg);
+      cout << "Max packet Size is " << size2 << "\n";
       break;
-      
-    case 'a' : /* packet length */
-      size=atoi(optarg);
-      size1=atoi(optarg);
-      cout << "Packet size is " << size  << "\n";
+
+    case 'a': /* packet length */
+      size1 = atoi(optarg);
+      size2 = atoi(optarg);
+      cout << "Packet size1 is " << size1 << "\n";
       break;
     case 'v': /* distribution*/
-      wtd=*optarg;
+      wtd = *optarg;
       break;
     case 'i': /* wait time*/
-      sleepTime=atoi(optarg);
-      waittime=sleepTime;
-      waittime1=sleepTime;
+      sleepTime = atoi(optarg);
+      waittime = sleepTime;
+      waittime1 = sleepTime;
       break;
 
     case 'w': /*pkt length*/
-      sleepTime=atoi(optarg);
-      waittime=sleepTime;
-      reqFlag=4;
+      sleepTime = atoi(optarg);
+      waittime = sleepTime;
+      reqFlag = 4;
       break;
-   case 'W': /*wait time maxima*/
-      sleepTime1=atoi(optarg);
-      cout<<"sleeptime Max is "<<sleepTime<<"\n";
-      waittime1=sleepTime1;
-      reqFlag=4;
-      break;   
+    case 'W': /*wait time maxima*/
+      sleepTime1 = atoi(optarg);
+      cout << "sleeptime Max is " << sleepTime << "\n";
+      waittime1 = sleepTime1;
+      reqFlag = 4;
+      break;
     case 'z': /*sample_length*/
-      sample_length=atoi(optarg);
-      cout<<"sample_length is "<<sample_length<<"\n";
-      break;   
+      sample_length = atoi(optarg);
+      cout << "sample_length is " << sample_length << "\n";
+      break;
 
     case 'D': /* DEBUG INFO, print close */
-      hflag=1;
+      hflag = 1;
     case 'd': /* print, continue. */
-      dflag=1;
+      dflag = 1;
       cout << "DEBUGGING INFORMATION. " << endl;
       cout << "git (build time) : " << build_git_time << endl;
       cout << "git (SHA)        : " << build_git_sha << endl;
@@ -227,15 +229,15 @@ int main(int argc, char *argv[]) {
       cout << "sizeof(timeval.tv_sec) = " << sizeof(timeval::tv_sec) << " bytes. " << endl;
       cout << "sizeof(timeval.tv_usec) = " << sizeof(timeval::tv_usec) << " bytes. " << endl;
 
-      gettimeofday(&PktDept,NULL);
+      gettimeofday(&PktDept, NULL);
 
       printf("PktDept.tv_sec = %d\nPktDept.tv_usec = %06ld\n", PktDept.tv_sec, PktDept.tv_usec);
       break;
-	
+
     case 'h': /*Help*/
-      hflag=1;
-      
-      printf("%s\n",argv[0]);
+      hflag = 1;
+
+      printf("%s\n", argv[0]);
       printf(" -h help (this text)\n");
       printf(" -V(--version) Version.\n");
       printf(" -e(--expid) Experiment id [required]\n");
@@ -256,136 +258,154 @@ int main(int argc, char *argv[]) {
       printf(" -v (--waitdist) e- exponential u- uniform d- discrete uniform default- deterministic\n");
       printf(" \n");
       printf(" -z  Enter the sample length (integer) (optional) ");
-      printf("        If used then it will be the number of samples per packet size in the distribution.)\n");      
+      printf("        If used then it will be the number of samples per packet size1 in the distribution.)\n");
       printf(" The -t and -n options are exclusive, if both are defined unknown behaviour might occur.\n");
       printf(" If neither is defined the software will run forever, or atleast until terminated. \n\n");
       break;
     default:
-			hflag=1;
+      hflag = 1;
       printf("Use -h for instructions.\n");
       break;
     }
   }
-  if (hflag) exit(EXIT_SUCCESS);
-  if (reqFlag<4) {
-    printf("Missing required arguments.\nRun %s -h for arguments.\n",argv[0]);
+  if (hflag)
+    exit(EXIT_SUCCESS);
+  if (reqFlag < 4)
+  {
+    printf("Missing required arguments.\nRun %s -h for arguments.\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
   /* get server IP address (no check if input is IP address or DNS name */
   h = gethostbyname(serverName);
-  if(h==NULL) {
+  if (h == NULL)
+  {
     printf("%s: unknown host '%s' \n", argv[0], argv[1]);
     exit(1);
   }
 
-
-  RND* myRND1;// packet size distribution
-  RND* myRND2; // wait time distribution
-  if (quiet==0){
-    printf("Packet size distribution: ");
+  RND *myRND1; // packet size1 distribution
+  RND *myRND2; // wait time distribution
+  if (quiet == 0)
+  {
+    printf("Packet size1 distribution: ");
   }
-  switch(psd){
+  switch (psd)
+  {
   case 'e':
-    if (quiet==0){
-      printf("Expontial, rndexp(%d).\n",size1);
+    if (quiet == 0)
+    {
+      printf("Expontial, rndexp(%d).\n", size2);
     }
-    myRND1=new RNDEXP(size1);
-    //	RNDEXP myRND1(size1);
+    myRND1 = new RNDEXP(size2);
+    //	RNDEXP myRND1(size2);
     break;
   case 'u':
-    if (quiet==0){
-    printf("Uniform, rndunif(%d,%d)\n",size,size1);
+    if (quiet == 0)
+    {
+      printf("Uniform, rndunif(%d,%d)\n", size1, size2);
     }
-    myRND1=new RNDUNIF(size,size1);
-    //RNDUNIF myRND1(size,size1);		
+    myRND1 = new RNDUNIF(size1, size2);
+    // RNDUNIF myRND1(size1,size2);
     break;
-    
+
   case 'd':
-    if (quiet==0){
-      printf ("Uniform Discrete, rndunid(%d,%d).\n",size,size1);
+    if (quiet == 0)
+    {
+      printf("Uniform Discrete, rndunid(%d,%d).\n", size1, size2);
     }
-    myRND1 = new RNDUNID(size,size1);
-    //RNDUNID myRND1(size,size1);
+    myRND1 = new RNDUNID(size1, size2);
+    // RNDUNID myRND1(size1,size2);
     break;
   default:
-    if (quiet==0){
-      printf("Default is to deterministic, rnddet(%d).\n",size1);
+    if (quiet == 0)
+    {
+      printf("Default is to deterministic, rnddet(%d).\n", size2);
     }
-    myRND1=new RNDDET(size1);
-    //RNDDET myRND1(size1);
+    myRND1 = new RNDDET(size2);
+    // RNDDET myRND1(size2);
     break;
   }
 
-  if (quiet==0){
+  if (quiet == 0)
+  {
     printf("Wait time distribution: ");
   }
-  switch(wtd){
+  switch (wtd)
+  {
   case 'e':
-    if (quiet==0){
-      printf("Expontial, rndexp(%g)\n",waittime1);
+    if (quiet == 0)
+    {
+      printf("Expontial, rndexp(%g)\n", waittime1);
     }
-    myRND2=new RNDEXP(waittime1);
+    myRND2 = new RNDEXP(waittime1);
     break;
   case 'u':
-    if (quiet==0){
-      printf("Uniform, rndunif(%g,%g)\n",waittime,waittime1);
+    if (quiet == 0)
+    {
+      printf("Uniform, rndunif(%g,%g)\n", waittime, waittime1);
     }
-    myRND2=new RNDUNIF(waittime,waittime1);
+    myRND2 = new RNDUNIF(waittime, waittime1);
     break;
-    
+
   case 'd':
-    if (quiet==0){
-      printf("Uniform Discrete, rndunid(%g,%g).\n",waittime,waittime1);
+    if (quiet == 0)
+    {
+      printf("Uniform Discrete, rndunid(%g,%g).\n", waittime, waittime1);
     }
-    myRND2=new RNDUNID(waittime,waittime1);
+    myRND2 = new RNDUNID(waittime, waittime1);
     break;
   default:
-    if (quiet==0){
-      printf("Defaults to deterministic, rnddet(%g)\n",waittime1);
+    if (quiet == 0)
+    {
+      printf("Defaults to deterministic, rnddet(%g)\n", waittime1);
     }
-    myRND2=new RNDDET(waittime1);
+    myRND2 = new RNDDET(waittime1);
     break;
   }
-  
-  double pps= (1e6/(double)(waittime1));
-  if (quiet==0){
+
+  double pps = (1e6 / (double)(waittime1));
+  if (quiet == 0)
+  {
     printf("Seeds:\n");
     printf("\tPktsize: ");
     (*myRND1).printseed();
     printf("\tWaittime: ");
     (*myRND2).printseed();
   }
-  
+
   char fname_cpu[200];
-  bzero(&fname_cpu,200);
+  bzero(&fname_cpu, 200);
   /*
   strcat(fname_cpu, exp_id);
   strcat(fname_cpu, "/");
   strcat(fname_cpu, run_id);
   strcat(fname_cpu, "_send_cpueval.txt");
   */
-  sprintf(fname_cpu,"%d_%d_send_cpueval.txt", exp_id,run_id);
-  if(loglevel>1){
+  sprintf(fname_cpu, "%d_%d_send_cpueval.txt", exp_id, run_id);
+  if (loglevel > 1)
+  {
     printf("Writes cpu data to %s.\n", fname_cpu);
-    //CPU_before=estimateCPU(40,100000,fname_cpu);
-    TSC_before=realcc();
-    gettimeofday(&GTOD_before,NULL);
-    if (quiet==0){
-      printf("Estimated cpu to %f Hz.\n",CPU_before);
+    // CPU_before=estimateCPU(40,100000,fname_cpu);
+    TSC_before = realcc();
+    gettimeofday(&GTOD_before, NULL);
+    if (quiet == 0)
+    {
+      printf("Estimated cpu to %f Hz.\n", CPU_before);
     }
   }
 
-  printf("%s: Sending data to %s (%s:%d)\n", argv[0], h->h_name,inet_ntoa(*(struct in_addr *)h->h_addr_list[0]),REMOTE_SERVER_PORT);
+  printf("%s: Sending data to %s (%s:%d)\n", argv[0], h->h_name, inet_ntoa(*(struct in_addr *)h->h_addr_list[0]), REMOTE_SERVER_PORT);
 
   remoteServAddr.sin_family = h->h_addrtype;
-  memcpy((char *) &remoteServAddr.sin_addr.s_addr, h->h_addr_list[0], h->h_length);
+  memcpy((char *)&remoteServAddr.sin_addr.s_addr, h->h_addr_list[0], h->h_length);
   remoteServAddr.sin_port = htons(REMOTE_SERVER_PORT);
 
   /* socket creation */
-  sd = socket(AF_INET,SOCK_DGRAM,0);
-  if(sd<0) {
-    printf("%s: cannot open socket \n",argv[0]);
+  sd = socket(AF_INET, SOCK_DGRAM, 0);
+  if (sd < 0)
+  {
+    printf("%s: cannot open socket \n", argv[0]);
     exit(1);
   }
 
@@ -394,54 +414,60 @@ int main(int argc, char *argv[]) {
   cliAddr.sin_addr.s_addr = htonl(INADDR_ANY);
   cliAddr.sin_port = htons(SOURCE_PORT);
 
-  rc = bind(sd, (struct sockaddr *) &cliAddr, sizeof(cliAddr));
-  if(rc<0) {
+  rc = bind(sd, (struct sockaddr *)&cliAddr, sizeof(cliAddr));
+  if (rc < 0)
+  {
     printf("%s: cannot bind port\n", argv[0]);
     exit(1);
   }
   printf("Src port : %d \n", ntohs(cliAddr.sin_port));
-  
-  socklen_t len;
-  len=128;
-  
 
-  rc=getsockname(sd, (struct sockaddr* ) &myAddr, &len);
+  socklen_t len;
+  len = 128;
+
+  rc = getsockname(sd, (struct sockaddr *)&myAddr, &len);
 
   transfer_data sender;
-  //transfer_data *psender;
-  
-  string test(1483,'x');
+  // transfer_data *psender;
+
+  string test(1483, 'x');
   strcpy(sender.junk, test.c_str());
   //    psender=&sender;
-  
-  u_int64_t istart,istop;
+
+  u_int64_t istart, istop;
   //    u_int64_t istart0,istop0;/*Var used for send start-stop time*/
-  istart=0;
-  istop=0;
-  //istart0=0;
-  //istop0=0;
-  
+  istart = 0;
+  istop = 0;
+  // istart0=0;
+  // istop0=0;
+
   /* send data */
-  s=&data;
-  gettimeofday(s,NULL);
-  
+  s = &data;
+  gettimeofday(s, NULL);
+
   //    cout<<s->tv_sec<<","<<s->tv_usec<<endl;
-  start=*s;
+  start = *s;
 
   // ((L-l)*num of samples )/sample_length
-  //sample_length = 2;
-  if (sample_length > 0){
-    if (quiet==0){
-      printf("Adapting number of packets, as to reach the desired sample size.\n"); 
-      printf("Size1 %d, size = %d \n", size1,size);
+  // sample_length = 2;
+  if (sample_length > 0)
+  {
+    if (quiet == 0)
+    {
+      printf("Adapting number of packets, as to reach the desired sample size1.\n");
+      printf("Size1 %d, size1 = %d \n", size2, size1);
     }
-    difference_size = size1 -size;
-    if (quiet==0){
-      printf("difference_size = %d , runPkts = %g , sample_length = %d , runPkts = %g \n", difference_size,runPkts,sample_length, runPkts_1);
+    difference_size = size2 - size1;
+    if (quiet == 0)
+    {
+      printf("difference_size = %d , runPkts = %g , sample_length = %d , runPkts = %g \n", difference_size, runPkts, sample_length, runPkts_1);
     }
-    runPkts_1 = floor (((difference_size)*runPkts)/sample_length) + runPkts;
-  } else {
-    if (quiet==0){
+    runPkts_1 = floor(((difference_size)*runPkts) / sample_length) + runPkts;
+  }
+  else
+  {
+    if (quiet == 0)
+    {
       printf("Fixed no pkts. \n");
     }
     runPkts_1 = runPkts;
@@ -451,259 +477,291 @@ int main(int argc, char *argv[]) {
     printf("runPkts_1 = %g \n", runPkts_1);
   */
 
-  if(runType==1) {
-    printf("Will run %g pkts for each size.\n",runPkts);
-    printf("Experiment will run an overall of %g samples.\n",runPkts_1);
-    if (sample_length>0){
-	printf("(%d *%d) / %g ==> %g \n",difference_size, runPkts, sample_length, floor (((difference_size)*runPkts)/sample_length));
+  if (runType == 1)
+  {
+    printf("Will run %g pkts for each size1.\n", runPkts);
+    printf("Experiment will run an overall of %g samples.\n", runPkts_1);
+    if (sample_length > 0)
+    {
+      printf("(%d *%d) / %g ==> %g \n", difference_size, runPkts, sample_length, floor(((difference_size)*runPkts) / sample_length));
     }
-    double di=0;
-    printf("Should take %g seconds .\n", (double)(runPkts_1)/pps);
+    double di = 0;
+    printf("Should take %g seconds .\n", (double)(runPkts_1) / pps);
 
-    sender.exp_id=htonl(exp_id);
-    sender.run_id=htonl(run_id);
-    sender.key_id=htonl(key_id);
-    
+    sender.exp_id = htonl(exp_id);
+    sender.run_id = htonl(run_id);
+    sender.key_id = htonl(key_id);
+
     printf("Sending:\n");
-    printf("Experiment id=%d, run id=%d and key id = %d\n", exp_id,run_id,key_id);
+    printf("Experiment id=%d, run id=%d and key id = %d\n", exp_id, run_id, key_id);
     /*
     printf("HORD:%d:%d:%d\n", exp_id,run_id,key_id);
     printf("NORD%d:%d:%d\n", sender.exp_id,sender.run_id,sender.key_id);
     */
-    PktDept.tv_sec=0;
-    PktDept.tv_usec=0;
+    PktDept.tv_sec = 0;
+    PktDept.tv_usec = 0;
 
-    if(runPkts_1==-1) {
+    if (runPkts_1 == -1)
+    {
       printf("Will run forever....\n");
-      printf("Sending %d bytes.\n", size1);
-      while(true){
-	sender.counter=htonl((int)di);
-	sender.starttime=istart;
-	sender.stoptime=istop;
-	sender.depttime.tv_sec=PktDept.tv_sec;
-	sender.depttime.tv_usec=PktDept.tv_usec;
-	istart=realcc();
-	if (quiet==1 || dflag) {
-	  printf("[%d] sender.depttime.tv_sec = %06ld sender.depttime.tv_usec = %llu \n", di,(int)sender.depttime.tv_sec,sender.depttime.tv_usec);
-	  printf("             PktDept.tv_sec = %06ld PktDept.tv_usec = %06ld\n", PktDept.tv_sec, PktDept.tv_usec); 
-	}
-	rc =sendto(sd, &sender,size1, 0,(struct sockaddr *) &remoteServAddr,sizeof(remoteServAddr));//size> app head
-	istop=realcc();
-	gettimeofday(&PktDept,NULL);
-	if(rc<0)          {
-	  printf("%s: cannot send data %d, error was %d and size was %d \n",argv[0],(int)(di-1),rc,size1);
-	  close(sd);
-	  exit(1);
-	}
-	if(loglevel>1){
-	  printf("Sent ; %d < %d \n", (int)di, (int)runPkts_1);
-	}
-	di++;
+      printf("Sending %d bytes.\n", size2);
+      while (true)
+      {
+        sender.counter = htonl((int)di);
+        sender.starttime = istart;
+        sender.stoptime = istop;
+        sender.depttime.tv_sec = PktDept.tv_sec;
+        sender.depttime.tv_usec = PktDept.tv_usec;
+        istart = realcc();
+        if (quiet == 1 || dflag)
+        {
+          printf("[%d] sender.depttime.tv_sec = %06ld sender.depttime.tv_usec = %llu \n", di, (int)sender.depttime.tv_sec, sender.depttime.tv_usec);
+          printf("             PktDept.tv_sec = %06ld PktDept.tv_usec = %06ld\n", PktDept.tv_sec, PktDept.tv_usec);
+        }
+        rc = sendto(sd, &sender, size2, 0, (struct sockaddr *)&remoteServAddr, sizeof(remoteServAddr)); // size1> app head
+        istop = realcc();
+        gettimeofday(&PktDept, NULL);
+        if (rc < 0)
+        {
+          printf("%s: cannot send data %d, error was %d and size1 was %d \n", argv[0], (int)(di - 1), rc, size2);
+          close(sd);
+          exit(1);
+        }
+        if (loglevel > 1)
+        {
+          printf("Sent ; %d < %d \n", (int)di, (int)runPkts_1);
+        }
+        di++;
 
-	if(int(di)%1000==0) {
-	  cout << di << " pkts." <<endl;
-	}
-	waittime=myRND2->Rnd();
-	//       cout<< waittime<<"wait time\n" << "packet num is "<< di<<"\n";
-	uPause(waittime);
-      }      
-      
-      
-    } else {
+        if (int(di) % 1000 == 0)
+        {
+          cout << di << " pkts." << endl;
+        }
+        waittime = myRND2->Rnd();
+        //       cout<< waittime<<"wait time\n" << "packet num is "<< di<<"\n";
+        uPause(waittime);
+      }
+    }
+    else
+    {
       printf("This is a finite run, dflag=%d.\n", dflag);
 
-      while(di<runPkts_1){
-	sender.counter=htonl((int)di);
-	sender.starttime=istart;
-	sender.stoptime=istop;
-	sender.depttime.tv_sec=PktDept.tv_sec;
-	sender.depttime.tv_usec=PktDept.tv_usec;	
-	istart=realcc();
-	if (quiet==0 || dflag) {
-	  printf("[%d] sender.depttime.tv_sec = %06ld sender.depttime.tv_usec = %06ld \n", (int)di, (int)sender.depttime.tv_sec,(int)sender.depttime.tv_usec);
-	  printf("             PktDept.tv_sec = %06ld PktDept.tv_usec = %06ld\n", PktDept.tv_sec, PktDept.tv_usec); 
-	}
-	rc =sendto(sd, &sender,size1, 0,(struct sockaddr *) &remoteServAddr,sizeof(remoteServAddr));//size> app head
-	istop=realcc();
-	gettimeofday(&PktDept,NULL); 
-	if(rc<0)          {
-	  printf("%s: cannot send data %d \n",argv[0],(int)(di-1));
-	  close(sd);
-	  exit(1);
-	}
-	if(loglevel>1){
-	  printf("Sent ; %d < %d \n", (int)di, (int)runPkts_1);
-	}
-	di++;
-	if (int (di) %(int)runPkts == 0)
-	  {
-	    size1 = size1 - sample_length;
-	    
-	  }
-	
-	if(int(di)%1000==0) {
-	  cout << PktDept.tv_sec << " " << di << "/" << runPkts_1 << " pkts." <<endl;
-	}
-	waittime=myRND2->Rnd();
-	//       cout<< waittime<<"wait time\n" << "packet num is "<< di<<"\n";
-	uPause(waittime);
-      }
+      while (di < runPkts_1)
+      {
+        sender.counter = htonl((int)di);
+        sender.starttime = istart;
+        sender.stoptime = istop;
+        sender.depttime.tv_sec = PktDept.tv_sec;
+        sender.depttime.tv_usec = PktDept.tv_usec;
+        istart = realcc();
+        if (quiet == 0 || dflag)
+        {
+          printf("[%d] sender.depttime.tv_sec = %06ld sender.depttime.tv_usec = %06ld \n", (int)di, (int)sender.depttime.tv_sec, (int)sender.depttime.tv_usec);
+          printf("             PktDept.tv_sec = %06ld PktDept.tv_usec = %06ld\n", PktDept.tv_sec, PktDept.tv_usec);
+        }
+        rc = sendto(sd, &sender, size2, 0, (struct sockaddr *)&remoteServAddr, sizeof(remoteServAddr)); // size1> app head
+        istop = realcc();
+        gettimeofday(&PktDept, NULL);
+        if (rc < 0)
+        {
+          printf("%s: cannot send data %d \n", argv[0], (int)(di - 1));
+          close(sd);
+          exit(1);
+        }
+        if (loglevel > 1)
+        {
+          printf("Sent ; %d < %d \n", (int)di, (int)runPkts_1);
+        }
+        di++;
+        if (int(di) % (int)runPkts == 0)
+        {
+          size2 = size2 - sample_length;
+        }
 
+        if (int(di) % 1000 == 0)
+        {
+          cout << PktDept.tv_sec << " " << di << "/" << runPkts_1 << " pkts." << endl;
+        }
+        waittime = myRND2->Rnd();
+        //       cout<< waittime<<"wait time\n" << "packet num is "<< di<<"\n";
+        uPause(waittime);
+      }
     }
-    
-    printf("Sent %d pkts.\n",(int)di); 
-    gettimeofday(s,NULL);
-    stop=*s;
+
+    printf("Sent %d pkts.\n", (int)di);
+    gettimeofday(s, NULL);
+    stop = *s;
   }
 
-if(loglevel>1){
-  gettimeofday(&GTOD_after,NULL);
-  TSC_after=realcc();
-  //  CPU_after=estimateCPU(40,100000,fname_cpu);
-  
-  printf("Start:%d.%06ld - %llu\n", (int)GTOD_before.tv_sec, GTOD_before.tv_usec, TSC_before);
-  printf("Stop:%d.%06ld - %llu\n", (int)GTOD_after.tv_sec, GTOD_after.tv_usec, TSC_after);
-  printf("CPU before: %f \n", CPU_before);
-  printf("CPU after: %f \n", CPU_after);
- }
+  if (loglevel > 1)
+  {
+    gettimeofday(&GTOD_after, NULL);
+    TSC_after = realcc();
+    //  CPU_after=estimateCPU(40,100000,fname_cpu);
 
+    printf("Start:%d.%06ld - %llu\n", (int)GTOD_before.tv_sec, GTOD_before.tv_usec, TSC_before);
+    printf("Stop:%d.%06ld - %llu\n", (int)GTOD_after.tv_sec, GTOD_after.tv_usec, TSC_after);
+    printf("CPU before: %f \n", CPU_before);
+    printf("CPU after: %f \n", CPU_after);
+  }
 
   return 1;
 }
 
-void uPause(double noUsec){
-//  printf(">uPause(%g)\t", noUsec);
+void uPause(double noUsec)
+{
+  //  printf(">uPause(%g)\t", noUsec);
   struct timeval s;
   struct timeval e;
-  int secJump=0;
-  int loops=0;
-  int secs=(int)floor((double)noUsec/1000000.0);
-  double usecs=noUsec-secs*1000000;
+  int secJump = 0;
+  int loops = 0;
+  int secs = (int)floor((double)noUsec / 1000000.0);
+  double usecs = noUsec - secs * 1000000;
 
-   if(noUsec>10000) {
+  if (noUsec > 10000)
+  {
     //    printf("Look Im slow.\n");
     usleep(noUsec);
-  } else {
-     gettimeofday(&s,NULL);
-     e.tv_sec=s.tv_sec+secs; 
-     
-     if(secs>0) {
-       secJump=1;
-       if(secs>1){
-	 printf("Sec %d s!!",secs); 
-       }
-     }
-     if(s.tv_usec+usecs>1000000) {
-       e.tv_sec=e.tv_sec+1;
-       e.tv_usec=s.tv_usec+(long int)usecs-1000000;
-       secJump=1;
-     } else {
-       e.tv_usec=s.tv_usec+(long int)usecs;
-     }
-     
-     if(secJump==1) {
-       while(s.tv_sec<e.tv_sec && loops<1000000 ){
-	 gettimeofday(&s,NULL);
-       loops++;
-       }
-       if(loops>=1000000){
-	 //printf("sec loops 100000.\n ");
-       }
-     }
-     
-     loops=0;
-     while(s.tv_sec<=e.tv_sec && s.tv_usec<e.tv_usec && loops<1000000 ){
-       gettimeofday(&s,NULL);
-       loops++;
-     }
-     if(loops>=1000000){
-       //    printf("usec loops 100000.\n ");
-       //printf("Current %d s target %d s \t ",(int)s.tv_sec,(int)e.tv_sec   );
-    //printf("Current %06ld target us  too %06ld  us\n",s.tv_usec,e.tv_usec   );
-     }
-     if(s.tv_sec>e.tv_sec){
-       printf("s sec > e sec.\n ");
-       printf("Current %d s target %d s \t ",(int)s.tv_sec,(int)e.tv_sec   );
-       printf("Current %06ld target us  too %06ld  us\n",s.tv_usec,e.tv_usec   );
-     }
-     
-     gettimeofday(&s,NULL);
-   }
-     //  printf("<uPause(%g)\n", noUsec);
+  }
+  else
+  {
+    gettimeofday(&s, NULL);
+    e.tv_sec = s.tv_sec + secs;
+
+    if (secs > 0)
+    {
+      secJump = 1;
+      if (secs > 1)
+      {
+        printf("Sec %d s!!", secs);
+      }
+    }
+    if (s.tv_usec + usecs > 1000000)
+    {
+      e.tv_sec = e.tv_sec + 1;
+      e.tv_usec = s.tv_usec + (long int)usecs - 1000000;
+      secJump = 1;
+    }
+    else
+    {
+      e.tv_usec = s.tv_usec + (long int)usecs;
+    }
+
+    if (secJump == 1)
+    {
+      while (s.tv_sec < e.tv_sec && loops < 1000000)
+      {
+        gettimeofday(&s, NULL);
+        loops++;
+      }
+      if (loops >= 1000000)
+      {
+        // printf("sec loops 100000.\n ");
+      }
+    }
+
+    loops = 0;
+    while (s.tv_sec <= e.tv_sec && s.tv_usec < e.tv_usec && loops < 1000000)
+    {
+      gettimeofday(&s, NULL);
+      loops++;
+    }
+    if (loops >= 1000000)
+    {
+      //    printf("usec loops 100000.\n ");
+      // printf("Current %d s target %d s \t ",(int)s.tv_sec,(int)e.tv_sec   );
+      // printf("Current %06ld target us  too %06ld  us\n",s.tv_usec,e.tv_usec   );
+    }
+    if (s.tv_sec > e.tv_sec)
+    {
+      printf("s sec > e sec.\n ");
+      printf("Current %d s target %d s \t ", (int)s.tv_sec, (int)e.tv_sec);
+      printf("Current %06ld target us  too %06ld  us\n", s.tv_usec, e.tv_usec);
+    }
+
+    gettimeofday(&s, NULL);
+  }
+  //  printf("<uPause(%g)\n", noUsec);
 }
 
-void closePrg(int sig){
-  noBreak=0;
+void closePrg(int sig)
+{
+  noBreak = 0;
   return;
 }
 
-void killPrg(int sig){
-  noBreak=0;
+void killPrg(int sig)
+{
+  noBreak = 0;
   cout << "KILLED!!! " << endl;
-  cout<<"Sent a total of " << runPkts << " pkts."<<endl;
+  cout << "Sent a total of " << runPkts << " pkts." << endl;
   exit(EXIT_SUCCESS);
 }
 
-double estimateCPU(int samples, int sleeptime, char *filename){
+double estimateCPU(int samples, int sleeptime, char *filename)
+{
   struct tm *s;
   char tms[40];
   u_int64_t difft;
   float freq;
-  double freq_avg=0;
-  unsigned long microseconds,seconds;
+  double freq_avg = 0;
+  unsigned long microseconds, seconds;
   struct timeval data;
   struct timeval st[100];
   u_int64_t cputime[100];
 
   double dseconds;
-  if(samples>100){
-    samples=100;
+  if (samples > 100)
+  {
+    samples = 100;
   }
-printf ("helllo %s \n",filename);
+  printf("helllo %s \n", filename);
   FILE *pFile;
-pFile=fopen(filename,"w+");
- if( (pFile=fopen(filename,"a+"))== NULL)
-printf("--------\n");
-//printf ("%d %d --- hellow orld \n", samples, sleeptime);
+  pFile = fopen(filename, "w+");
+  if ((pFile = fopen(filename, "a+")) == NULL)
+    printf("--------\n");
+  // printf ("%d %d --- hellow orld \n", samples, sleeptime);
 
- fprintf( pFile,"Time\tCpu Cycles\tFrequency\n");
-  
+  fprintf(pFile, "Time\tCpu Cycles\tFrequency\n");
 
-  for(int i=0;i<samples;i++){
-    gettimeofday(&data,NULL);
-    cputime[i]=realcc();
-    st[i]=data;
+  for (int i = 0; i < samples; i++)
+  {
+    gettimeofday(&data, NULL);
+    cputime[i] = realcc();
+    st[i] = data;
     usleep(sleeptime);
-
   }
 
-
-  for(int n=0;n<samples;n++){
-    s=localtime(&st[n].tv_sec);
-    strftime (tms, sizeof (tms), "%Y-%m-%d %H:%M:%S", s);
-    if(n-1>=0){
-      difft=cputime[n]-cputime[n-1];
-      if(st[n-1].tv_usec>st[n].tv_usec){
-	microseconds=(st[n].tv_usec+1000000)-st[n-1].tv_usec;
-	seconds=(st[n].tv_sec-1)-st[n-1].tv_sec;
-      }else{
-	microseconds=st[n].tv_usec-st[n-1].tv_usec;
-	seconds=st[n].tv_sec-st[n-1].tv_sec;
+  for (int n = 0; n < samples; n++)
+  {
+    s = localtime(&st[n].tv_sec);
+    strftime(tms, sizeof(tms), "%Y-%m-%d %H:%M:%S", s);
+    if (n - 1 >= 0)
+    {
+      difft = cputime[n] - cputime[n - 1];
+      if (st[n - 1].tv_usec > st[n].tv_usec)
+      {
+        microseconds = (st[n].tv_usec + 1000000) - st[n - 1].tv_usec;
+        seconds = (st[n].tv_sec - 1) - st[n - 1].tv_sec;
       }
-      dseconds=seconds+(microseconds/1e6);
-      freq=difft/dseconds;
-      freq_avg+=freq;
-    }else{
-      freq=0;
-      freq_avg=0;
+      else
+      {
+        microseconds = st[n].tv_usec - st[n - 1].tv_usec;
+        seconds = st[n].tv_sec - st[n - 1].tv_sec;
+      }
+      dseconds = seconds + (microseconds / 1e6);
+      freq = difft / dseconds;
+      freq_avg += freq;
     }
-    fprintf(pFile, "%s.%06ld\t %llu\t\t%f \n",tms, st[n].tv_usec,cputime[n],freq);
+    else
+    {
+      freq = 0;
+      freq_avg = 0;
+    }
+    fprintf(pFile, "%s.%06ld\t %llu\t\t%f \n", tms, st[n].tv_usec, cputime[n], freq);
   }
-  fprintf(pFile,"Average CPU = %f\n", (freq_avg)/(double)(samples));
-  fprintf(pFile,"***\n");
+  fprintf(pFile, "Average CPU = %f\n", (freq_avg) / (double)(samples));
+  fprintf(pFile, "***\n");
   fclose(pFile);
-  return (freq_avg)/(double)(samples); 
-
+  return (freq_avg) / (double)(samples);
 }
-
-

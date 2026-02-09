@@ -39,7 +39,7 @@ static inline u_int64_t realcc(void){
 struct timeval *s;
 struct timeval start,data,stop;
 double runPkts,runPkts_1;
-int size,noBreak,size1;
+int size1,noBreak,size2;
 int difference_size,sample_length;
 
 
@@ -103,8 +103,8 @@ int main (int argc, char *argv[]) {
   hflag=0;
   runType=0;
   reqFlag=0;
-  size=1224;
-  size1 = 1224;
+  size1=1224;
+  size2 = 1224;
   sleepTime=-1;
   waittime1 = 1000000;
 
@@ -135,17 +135,17 @@ int main (int argc, char *argv[]) {
       runType=1;
       break;
       break;
-    case 'm': /*pkt size distribution*/
+    case 'm': /*pkt size1 distribution*/
       psd=*optarg;
       cout <<" PSD is"<<psd <<"\n" ;
       break;
     case 'l': /*pkt length*/
-      size=atoi(optarg);
+      size1=atoi(optarg);
       
       break;
      case 'L': /*pkt length maxima*/
-      size1=atoi(optarg);
-      cout<< "Max packet Size is "<<size1 <<"\n";
+      size2=atoi(optarg);
+      cout<< "Max packet Size is "<<size2 <<"\n";
       break;
     case 'd': /* download */
       direction=1;
@@ -205,25 +205,25 @@ int main (int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  RND* myRND1;// packet size distribution
+  RND* myRND1;// packet size1 distribution
   RND* myRND2; // wait time distribution
   switch(psd){
 	case 'e':
 		printf("Expontial...");
-		myRND1=new RNDEXP(size1);
+		myRND1=new RNDEXP(size2);
 	break;
 	case 'u':
 		printf("Uniform...");
-		myRND1=new RNDUNIF(size,size1);
+		myRND1=new RNDUNIF(size1,size2);
 	break;
 
 	case 'd':
                printf ("uniform discrete");
-                myRND1 = new RNDUNID(size,size1);
+                myRND1 = new RNDUNID(size1,size2);
                break;
 	default:
 	printf("DEfault is to deterministic ");
-		myRND1=new RNDDET(size1);
+		myRND1=new RNDDET(size2);
 	 	break;
   }
 
@@ -309,10 +309,10 @@ int main (int argc, char *argv[]) {
   
   
 //----------------
-  difference_size = size1 -size;
+  difference_size = size2 -size1;
   runPkts_1 = floor (((difference_size)*runPkts)/sample_length) + runPkts;
   printf(" difference_size = %d  sample_length = %d \n", difference_size, sample_length);
-  printf("will run %g pkts, each %d bytes.\n",runPkts,size);
+  printf("will run %g pkts, each %d bytes.\n",runPkts,size1);
   
   cout << "Experiment will run an overall of " << runPkts_1 <<" samples" << endl;
   double di=0;
@@ -335,8 +335,8 @@ int main (int argc, char *argv[]) {
     printf("should take %g seconds .\n", (double)(runPkts_1)/pps);
 
     while(di<runPkts_1){
-    // size=int(myRND1->Rnd());
-     //    cout<< size<<"\n";
+    // size1=int(myRND1->Rnd());
+     //    cout<< size1<<"\n";
     waittime = (int) (myRND2->Rnd());
 //cout<<waittime<<" wait time\n";
 //waittime = waittime*1000;
@@ -349,13 +349,13 @@ int main (int argc, char *argv[]) {
       sender.depttime.tv_usec=PktDept.tv_usec;
       istart=realcc();
 
-      rc =write(sd, &sender,size);
+      rc =write(sd, &sender,size1);
       istop=realcc();
       gettimeofday(&PktDept,NULL); 
      // cout<<PktDept.tv_sec<<"."<<PktDept.tv_usec <<"\n";
 
       if(rc<0)          {
-	printf("%s: cannot send data, Packet N#  %d,  size was %d bytes, sender %p \n",argv[0],(int)(di-1), size,&sender );
+	printf("%s: cannot send data, Packet N#  %d,  size1 was %d bytes, sender %p \n",argv[0],(int)(di-1), size1,&sender );
 	close(sd);
 	exit(1);
       }
@@ -363,7 +363,7 @@ int main (int argc, char *argv[]) {
       di++;
       if (int (di) %(int)runPkts == 0)
 	{
-	size = size + sample_length;
+	size1 = size1 + sample_length;
 	//sleep(1);
 	}
       if(int(di)%1000==0) {
