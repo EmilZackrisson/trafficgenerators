@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
       printf("                                  Timeout is %d s, and -w is set.\n", SERVER_TIMEOUT);
       printf("-t || --timeout                   Timeout value [optional]\n");
       printf("-w || --wildcard                  If used, it will NOT accept the first packet recieve \n");
-      printf("                                  and use the data_time found in it as expid,runid, keyid. \n");
+      printf("                                  and use the data found in it as expid,runid, keyid. \n");
       printf("-p || --port_no 	     <port>	Port to listen on, default %d\n", LOCAL_SERVER_PORT);
       printf("                                       \n");
       printf("-e || --experiment_id  <id>       Experiment id [optional]\n");
@@ -227,9 +227,9 @@ int main(int argc, char *argv[])
       printf("-x || --echo                      Echo messages.\n");
       printf("                                       \n");
       printf("-h   help \n");
-      printf("-L  --log              <level>    Logs recived data_time and CPU info to file\n");
-      printf("                                  Logs the data_time into a directory <experiment_id> that must\n");
-      printf("                                  exist, save the data_time as \n");
+      printf("-L  --log              <level>    Logs recived data and CPU info to file\n");
+      printf("                                  Logs the data into a directory <experiment_id> that must\n");
+      printf("                                  exist, save the data as \n");
       printf("                                  <run_id>_server.txt\n");
       printf("                                  <run_id>_recv_cpueval.txt\n");
       printf("                                  The sender <run_id>_send_cpueva.txt must be collected \n");
@@ -287,7 +287,7 @@ int main(int argc, char *argv[])
   sprintf(fpath, "%s/%d", logpath, exp_id);
   if (loglevel > 1)
   {
-    printf("Writes cpu data_time to %s.\n", fname_cpu);
+    printf("Writes cpu data to %s.\n", fname_cpu);
   }
   if (wildcard == 0 && loglevel > 1)
   { // This is the ONLY case when its applicable, we know the exp,run and key id.
@@ -329,7 +329,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  printf("%s: waiting for data_time on port UDP %u\n", argv[0], LOCAL_SERVER_PORT);
+  printf("%s: waiting for data on port UDP %u\n", argv[0], LOCAL_SERVER_PORT);
 
   rstart = 0;
   rstop = 0;
@@ -483,7 +483,7 @@ int main(int argc, char *argv[])
       gettimeofday(&PktArr, NULL);
       if (n < 0)
       {
-        /*  printf("%s: cannot receive data_time \n",argv[0]); */
+        /*  printf("%s: cannot receive data \n",argv[0]); */
         continue;
       }
       else
@@ -683,7 +683,7 @@ void output_file(u_int32_t eid, u_int32_t rid, pdudata rpdu[], int sz, double fr
   // double var_iptr=0,var_ipts=0,var_ipgr=0,var_ipgs=0;
   if (sz == 0)
   {
-    printf("No data_time to save.\n");
+    printf("No data to save.\n");
     return;
   }
 

@@ -385,7 +385,7 @@ int main(int argc, char *argv[])
   sprintf(fname_cpu, "%d_%d_send_cpueval.txt", exp_id, run_id);
   if (loglevel > 1)
   {
-    printf("Writes cpu data_time to %s.\n", fname_cpu);
+    printf("Writes cpu data to %s.\n", fname_cpu);
     // CPU_before=estimateCPU(40,100000,fname_cpu);
     TSC_before = realcc();
     gettimeofday(&GTOD_before, NULL);
@@ -395,7 +395,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  printf("%s: Sending data_time to %s (%s:%d)\n", argv[0], h->h_name, inet_ntoa(*(struct in_addr *)h->h_addr_list[0]), REMOTE_SERVER_PORT);
+  printf("%s: Sending data to %s (%s:%d)\n", argv[0], h->h_name, inet_ntoa(*(struct in_addr *)h->h_addr_list[0]), REMOTE_SERVER_PORT);
 
   remoteServAddr.sin_family = h->h_addrtype;
   memcpy((char *)&remoteServAddr.sin_addr.s_addr, h->h_addr_list[0], h->h_length);
@@ -523,7 +523,7 @@ int main(int argc, char *argv[])
         gettimeofday(&PktDept, NULL);
         if (rc < 0)
         {
-          printf("%s: cannot send data_time %d, error was %d and size1 was %d \n", argv[0], (int)(di - 1), rc, size2);
+          printf("%s: cannot send data %d, error was %d and size1 was %d \n", argv[0], (int)(di - 1), rc, size2);
           close(sd);
           exit(1);
         }
@@ -564,7 +564,7 @@ int main(int argc, char *argv[])
         gettimeofday(&PktDept, NULL);
         if (rc < 0)
         {
-          printf("%s: cannot send data_time %d \n", argv[0], (int)(di - 1));
+          printf("%s: cannot send data %d \n", argv[0], (int)(di - 1));
           close(sd);
           exit(1);
         }

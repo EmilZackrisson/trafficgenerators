@@ -3,7 +3,7 @@
 #include <stdio.h>      /* standard C i/o facilities */
 #include <stdlib.h>     /* needed for atoi() */
 #include <unistd.h>     /* defines STDIN_FILENO, system calls,etc */
-#include <sys/types.h>  /* system data_time type definitions */
+#include <sys/types.h>  /* system data type definitions */
 #include <sys/socket.h> /* socket specific definitions */
 #include <netinet/in.h> /* INET constants and stuff */
 #include <arpa/inet.h>  /* IP address conversion stuff */
@@ -33,7 +33,7 @@ void echo( int sd ) {
     printf("Got a datagram from %s port %d\n",inet_ntoa(remote.sin_addr), ntohs(remote.sin_port));
 
     if (n<0) {
-      perror("Error receiving data_time");
+      perror("Error receiving data");
     } else {
       printf("GOT %d BYTES\n",n);
       /* Got something, just send it back */

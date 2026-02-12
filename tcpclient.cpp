@@ -360,7 +360,7 @@ int main(int argc, char *argv[])
 
     if (rc < 0)
     {
-      printf("%s: cannot send data_time, Packet N#  %d,  size1 was %d bytes, sender %p \n", argv[0], (int)(di - 1), size1, &sender);
+      printf("%s: cannot send data, Packet N#  %d,  size1 was %d bytes, sender %p \n", argv[0], (int)(di - 1), size1, &sender);
       close(sd);
       exit(1);
     }
