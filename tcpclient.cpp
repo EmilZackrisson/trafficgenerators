@@ -20,6 +20,7 @@
 #include "rndexp.h"
 #include "rnddet.h"
 #include "rndunid.h"
+#include "rndbi.h"
 
 #include "udpgen.h"
 using namespace std;
@@ -182,9 +183,9 @@ int main(int argc, char *argv[])
       printf(" -p (--port) <Destination Port> [optional default = 1500] \n");
       printf(" -n (--pkts) <Number of packets to send> [optional default = forever]\n");
       printf(" -l (--pktLen) <Packet Length> [bytes] [optional default = 1224]\n\n");
-      printf(" -m (--pktsize distribution) e- exponential u- uniform d- discrete uniform default- deterministic\n\n");
+      printf(" -m (--pktsize distribution) e- exponential u- uniform d- discrete uniform b- bimodal default- deterministic\n\n");
       printf(" -w (--waittime) <Inter frame gap, in usec.> [optional, but if set, voids desired]\n");
-      printf(" -v (--wait time distribution) e- exponential u- uniform d- discrete uniform default- deterministic\n\n");
+      printf(" -v (--wait time distribution) e- exponential u- uniform d- discrete uniform b- bimodal default- deterministic\n\n");
       printf(" -d (--down) 	Download, do not upload.\n");
       printf(" -z  Enter the sample length (integer)\n");
       printf(" The -t and -n options are exclusive, if both are defined unknown behaviour might occur.\n");
@@ -221,8 +222,21 @@ int main(int argc, char *argv[])
     printf("uniform discrete");
     myRND1 = new RNDUNID(size1, size2);
     break;
+
+  case 'b':
+    printf("Bimodal...");
+    myRND2 = new RNDBI(
+      0.4,     // 40% small
+      0.2,     // 20% large
+      size1,    // small value
+      size2,  // large value
+      5.5,     // lognormal mu
+      0.5      // lognormal sigma
+    );
+    break;
+
   default:
-    printf("DEfault is to deterministic ");
+    printf("Default is to deterministic ");
     myRND1 = new RNDDET(size2);
     break;
   }
@@ -242,8 +256,22 @@ int main(int argc, char *argv[])
     printf("uniform discrete");
     myRND2 = new RNDUNID(waittime, waittime1);
     break;
+
+  case 'b':
+    printf("Bimodal...");
+
+    myRND2 = new RNDBI(
+      0.4,     // 40% small
+      0.2,     // 20% large
+      size1,    // small value
+      size2,  // large value
+      5.5,     // lognormal mu
+      0.5      // lognormal sigma
+    );
+    break;
+
   default:
-    printf("DEfaults to determ");
+    printf("Defaults to determ");
     myRND2 = new RNDDET(waittime1);
     break;
   }
