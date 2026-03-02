@@ -226,12 +226,14 @@ int main(int argc, char *argv[])
   case 'b':
     printf("Bimodal...");
     myRND2 = new RNDBI(
-      0.4,     // 40% small
-      0.2,     // 20% large
-      size1,    // small value
-      size2,  // large value
-      5.5,     // lognormal mu
-      0.5      // lognormal sigma
+      (double)size1, // mu1 (small mean)
+      1.0,           // sigma1 (small stddev)
+      (double)size2, // mu2 (large mean)
+      1.0,           // sigma2 (large stddev)
+      40,            // firstCount (derived from original 0.4 weight)
+      20,            // secondCount (derived from original 0.2 weight)
+      (double)size2, // secondMaxCut
+      (long)time(NULL)
     );
     break;
 
@@ -261,12 +263,14 @@ int main(int argc, char *argv[])
     printf("Bimodal...");
 
     myRND2 = new RNDBI(
-      0.4,     // 40% small
-      0.2,     // 20% large
-      size1,    // small value
-      size2,  // large value
-      5.5,     // lognormal mu
-      0.5      // lognormal sigma
+      (double)size1, // mu1 (small mean)
+      1.0,           // sigma1 (small stddev)
+      (double)size2, // mu2 (large mean)
+      1.0,           // sigma2 (large stddev)
+      40,            // firstCount (derived from original 0.4 weight)
+      20,            // secondCount (derived from original 0.2 weight)
+      (double)size2, // secondMaxCut
+      (long)time(NULL)
     );
     break;
 
