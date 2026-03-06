@@ -20,7 +20,6 @@
 #include "rndexp.h"
 #include "rnddet.h"
 #include "rndunid.h"
-#include "rndbi.h"
 
 #include "udpgen.h"
 using namespace std;
@@ -37,11 +36,11 @@ static inline u_int64_t realcc(void)
   return cc;
 }
 
-struct timeval *s;
+struct timeval *s = 0;
 struct timeval start, data_time, stop;
-double runPkts, runPkts_1;
-int size1, noBreak, size2;
-int difference_size, sample_length;
+double numberOfPackets, runPkts_1 = 0;
+int packetSize, noBreak, maxPacketSize = 0;
+int difference_size, sample_length = 0;
 
 #define MAX_MSG 65536
 
@@ -50,11 +49,11 @@ int SERVER_PORT = 1500;
 int main(int argc, char *argv[])
 {
 
-  int option_index, op, sd, rc, hflag, reqFlag;
+  int option_index, op, socketDescriptor, rc, hflag, reqFlag;
   double waittime, sleepTime, waittime1, sleepTime1;
   struct sockaddr_in servAddr; // cliAddr,
   struct sockaddr_in myAddr;
-  struct hostent *h;
+  struct hostent *host;
   char *serverName = 0;
   u_int32_t exp_id, run_id, key_id;
   exp_id = run_id = key_id = 0;
@@ -67,10 +66,10 @@ int main(int argc, char *argv[])
   int runType; /* 0= default, forever, 1= nopkts, 2=time */
   noBreak = 1;
   waittime1 = 1000000;
-  char psd;
-  char wtd;
-  psd = 'x';
-  wtd = 'x';
+  char packetSizeDistOption;
+  char waitTimeDistOption;
+  packetSizeDistOption = 'x';
+  waitTimeDistOption = 'x';
 
   static struct option long_options[] = {
       {"expid ", required_argument, 0, 'e'},
@@ -100,8 +99,8 @@ int main(int argc, char *argv[])
   hflag = 0;
   runType = 0;
   reqFlag = 0;
-  size1 = 1224;
-  size2 = 1224;
+  packetSize = 1224;
+  maxPacketSize = 1224;
   sleepTime = -1;
   waittime1 = 1000000;
 
@@ -114,7 +113,7 @@ int main(int argc, char *argv[])
       exp_id = (u_int32_t)atoi(optarg);
       reqFlag++;
       break;
-    case 'r': /*exp_id*/
+    case 'r': /*run_id*/
       run_id = (u_int32_t)atoi(optarg);
       reqFlag++;
       break;
@@ -130,27 +129,26 @@ int main(int argc, char *argv[])
       SERVER_PORT = atoi(optarg);
       break;
     case 'n': /* number of pkts */
-      runPkts = atof(optarg);
+      numberOfPackets = atof(optarg);
       runType = 1;
       break;
       break;
-    case 'm': /*pkt size1 distribution*/
-      psd = *optarg;
-      cout << " PSD is" << psd << "\n";
+    case 'm': /*pkt packetSize distribution*/
+      packetSizeDistOption = *optarg;
+      cout << " PSD is" << packetSizeDistOption << "\n";
       break;
     case 'l': /*pkt length*/
-      size1 = atoi(optarg);
-
+      packetSize = atoi(optarg);
       break;
     case 'L': /*pkt length maxima*/
-      size2 = atoi(optarg);
-      cout << "Max packet Size is " << size2 << "\n";
+      maxPacketSize = atoi(optarg);
+      cout << "Max packet Size is " << maxPacketSize << "\n";
       break;
     case 'd': /* download */
       direction = 1;
       break;
     case 'v': /*waittime distribution*/
-      wtd = *optarg;
+      waitTimeDistOption = *optarg;
       break;
 
     case 'w': /*waittime*/
@@ -183,9 +181,9 @@ int main(int argc, char *argv[])
       printf(" -p (--port) <Destination Port> [optional default = 1500] \n");
       printf(" -n (--pkts) <Number of packets to send> [optional default = forever]\n");
       printf(" -l (--pktLen) <Packet Length> [bytes] [optional default = 1224]\n\n");
-      printf(" -m (--pktsize distribution) e- exponential u- uniform d- discrete uniform b- bimodal default- deterministic\n\n");
+      printf(" -m (--pktsize distribution) e- exponential u- uniform d- discrete uniform default- deterministic\n\n");
       printf(" -w (--waittime) <Inter frame gap, in usec.> [optional, but if set, voids desired]\n");
-      printf(" -v (--wait time distribution) e- exponential u- uniform d- discrete uniform b- bimodal default- deterministic\n\n");
+      printf(" -v (--wait time distribution) e- exponential u- uniform d- discrete uniform default- deterministic\n\n");
       printf(" -d (--down) 	Download, do not upload.\n");
       printf(" -z  Enter the sample length (integer)\n");
       printf(" The -t and -n options are exclusive, if both are defined unknown behaviour might occur.\n");
@@ -205,101 +203,72 @@ int main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
-  RND *myRND1; // packet size1 distribution
-  RND *myRND2; // wait time distribution
-  switch (psd)
+  RND *packetSizeDistribution; // packet packetSize distribution
+  RND *waitTimeDistribution;   // wait time distribution
+  switch (packetSizeDistOption)
   {
   case 'e':
     printf("Expontial...");
-    myRND1 = new RNDEXP(size2);
+    packetSizeDistribution = new RNDEXP(maxPacketSize);
     break;
   case 'u':
     printf("Uniform...");
-    myRND1 = new RNDUNIF(size1, size2);
+    packetSizeDistribution = new RNDUNIF(packetSize, maxPacketSize);
     break;
 
   case 'd':
-    printf("uniform discrete");
-    myRND1 = new RNDUNID(size1, size2);
-    break;
-
-  case 'b':
-    printf("Bimodal...");
-    myRND2 = new RNDBI(
-      (double)size1, // mu1 (small mean)
-      1.0,           // sigma1 (small stddev)
-      (double)size2, // mu2 (large mean)
-      1.0,           // sigma2 (large stddev)
-      40,            // firstCount (derived from original 0.4 weight)
-      20,            // secondCount (derived from original 0.2 weight)
-      (double)size2, // secondMaxCut
-      (long)time(NULL)
-    );
+    printf("Uniform discrete");
+    packetSizeDistribution = new RNDUNID(packetSize, maxPacketSize);
     break;
 
   default:
     printf("Default is to deterministic ");
-    myRND1 = new RNDDET(size2);
+    packetSizeDistribution = new RNDDET(maxPacketSize);
     break;
   }
 
-  switch (wtd)
+  switch (waitTimeDistOption)
   {
   case 'e':
     printf("Expontial...");
-    myRND2 = new RNDEXP(waittime1);
+    waitTimeDistribution = new RNDEXP(waittime1);
     break;
   case 'u':
     printf("Uniform...");
-    myRND2 = new RNDUNIF(waittime, waittime1);
+    waitTimeDistribution = new RNDUNIF(waittime, waittime1);
     break;
 
   case 'd':
     printf("uniform discrete");
-    myRND2 = new RNDUNID(waittime, waittime1);
-    break;
-
-  case 'b':
-    printf("Bimodal...");
-
-    myRND2 = new RNDBI(
-      (double)size1, // mu1 (small mean)
-      1.0,           // sigma1 (small stddev)
-      (double)size2, // mu2 (large mean)
-      1.0,           // sigma2 (large stddev)
-      40,            // firstCount (derived from original 0.4 weight)
-      20,            // secondCount (derived from original 0.2 weight)
-      (double)size2, // secondMaxCut
-      (long)time(NULL)
-    );
+    waitTimeDistribution = new RNDUNID(waittime, waittime1);
     break;
 
   default:
-    printf("Defaults to determ");
-    myRND2 = new RNDDET(waittime1);
+    printf("Defaults to deterministic");
+    waitTimeDistribution = new RNDDET(waittime1);
     break;
   }
-  (*myRND1).printseed();
-  (*myRND2).printseed();
+  (*packetSizeDistribution).printseed();
+  (*waitTimeDistribution).printseed();
 
   double pps = (1e6 / (double)(waittime1));
 
   /* get server IP address (no check if input is IP address or DNS name */
-  h = gethostbyname(serverName);
-  if (h == NULL)
+  host = gethostbyname(serverName);
+  if (host == NULL)
   {
     printf("%s: unknown host '%s' \n", argv[0], argv[1]);
     exit(1);
   }
 
-  servAddr.sin_family = h->h_addrtype;
-  memcpy((char *)&servAddr.sin_addr.s_addr, h->h_addr_list[0], h->h_length);
+  servAddr.sin_family = host->h_addrtype;
+  memcpy((char *)&servAddr.sin_addr.s_addr, host->h_addr_list[0], host->h_length);
   servAddr.sin_port = htons(SERVER_PORT);
 
   /* create socket */
 
-  sd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sd < 0)
+  socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
+  if (socketDescriptor < 0)
   {
     perror("cannot open socket to");
     exit(1);
@@ -313,7 +282,7 @@ int main(int argc, char *argv[])
   printf("Connecting to: %s:%d \n", serverName, SERVER_PORT);
   ;
 
-  rc = bind(sd, (struct sockaddr *)&myAddr, sizeof(myAddr));
+  rc = bind(socketDescriptor, (struct sockaddr *)&myAddr, sizeof(myAddr));
   if (rc < 0)
   {
     printf("%s: cannot bind port TCP %u\n", argv[0], SERVER_PORT);
@@ -323,7 +292,7 @@ int main(int argc, char *argv[])
 
   /* connect to server */
 
-  rc = connect(sd, (struct sockaddr *)&servAddr, sizeof(servAddr));
+  rc = connect(socketDescriptor, (struct sockaddr *)&servAddr, sizeof(servAddr));
   if (rc < 0)
   {
     perror("cannot connect ");
@@ -331,7 +300,7 @@ int main(int argc, char *argv[])
   }
   printf("Connected.\n");
   int flag = 1;
-  int resultTCP = setsockopt(sd, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(int));
+  int resultTCP = setsockopt(socketDescriptor, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(int));
   if (resultTCP < 0)
   {
     perror("problem.");
@@ -345,10 +314,10 @@ int main(int argc, char *argv[])
   strcpy(sender.junk, test.c_str());
 
   //----------------
-  difference_size = size2 - size1;
-  runPkts_1 = floor(((difference_size)*runPkts) / sample_length) + runPkts;
+  difference_size = maxPacketSize - packetSize;
+  runPkts_1 = floor((difference_size * numberOfPackets) / sample_length) + numberOfPackets;
   printf(" difference_size = %d  sample_length = %d \n", difference_size, sample_length);
-  printf("will run %g pkts, each %d bytes.\n", runPkts, size1);
+  printf("will run %g pkts, each %d bytes.\n", numberOfPackets, packetSize);
 
   cout << "Experiment will run an overall of " << runPkts_1 << " samples" << endl;
   double di = 0;
@@ -372,9 +341,9 @@ int main(int argc, char *argv[])
 
   while (di < runPkts_1)
   {
-    // size1=int(myRND1->Rnd());
-    //    cout<< size1<<"\n";
-    waittime = (int)(myRND2->Rnd());
+    // packetSize=int(packetSizeDistribution->Rnd());
+    //    cout<< packetSize<<"\n";
+    waittime = (int)(waitTimeDistribution->Rnd());
     // cout<<waittime<<" wait time\n";
     // waittime = waittime*1000;
 
@@ -385,22 +354,22 @@ int main(int argc, char *argv[])
     sender.depttime.tv_usec = PktDept.tv_usec;
     istart = realcc();
 
-    rc = write(sd, &sender, size1);
+    rc = write(socketDescriptor, &sender, packetSize);
     istop = realcc();
     gettimeofday(&PktDept, NULL);
     // cout<<PktDept.tv_sec<<"."<<PktDept.tv_usec <<"\n";
 
     if (rc < 0)
     {
-      printf("%s: cannot send data, Packet N#  %d,  size1 was %d bytes, sender %p \n", argv[0], (int)(di - 1), size1, &sender);
-      close(sd);
+      printf("%s: cannot send data, Packet N#  %d,  packetSize was %d bytes, sender %p \n", argv[0], (int)(di - 1), packetSize, &sender);
+      close(socketDescriptor);
       exit(1);
     }
     printf("%d\t %d bytes, %llu\t %llu\n", ntohl(sender.counter), rc, istart, istop);
     di++;
-    if (int(di) % (int)runPkts == 0)
+    if (int(di) % (int)numberOfPackets == 0)
     {
-      size1 = size1 + sample_length;
+      packetSize = packetSize + sample_length;
       // sleep(1);
     }
     if (int(di) % 1000 == 0)
@@ -413,7 +382,7 @@ int main(int argc, char *argv[])
   //----------------
 
   printf("Closing.\n");
-  close(sd);
+  close(socketDescriptor);
   return 0;
 }
 

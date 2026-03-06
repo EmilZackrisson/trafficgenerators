@@ -118,11 +118,11 @@ int main(int argc, char *argv[])
       exp_id = (u_int32_t)atoi(optarg);
       reqFlag++;
       break;
-    case 'r': /* experiment_id */
+    case 'r': /* run_id */
       run_id = (u_int32_t)atoi(optarg);
       reqFlag++;
       break;
-    case 'k': /* experiment_id */
+    case 'k': /* key_id */
       key_id = (u_int32_t)atoi(optarg);
       reqFlag++;
       break;
@@ -416,7 +416,6 @@ int main(int argc, char *argv[])
             //	  printf("%s: from %s:UDP:%u  COUNTER= %d \n",argv[0],inet_ntoa(cliAddr.sin_addr),ntohs(cliAddr.sin_port), message->counter);
           }
         }
-        printf("here\n");
       }
       printf("While closed().\n");
     }
