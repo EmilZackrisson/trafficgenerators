@@ -618,7 +618,7 @@ int main(int argc, char *argv[])
     printf("CPU after: %f \n", CPU_after);
   }
 
-  return 1;
+  return 0;
 }
 
 void uPause(double noUsec)
