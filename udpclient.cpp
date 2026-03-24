@@ -430,8 +430,9 @@ int main(int argc, char *argv[])
   transfer_data sender;
   // transfer_data *psender;
 
-  string test(1483, 'x');
-  strcpy(sender.junk, test.c_str());
+  /* fill junk payload with a repeating character; ensure full buffer available */
+  memset(sender.junk, 'x', sizeof(sender.junk));
+  sender.junk[sizeof(sender.junk) - 1] = '\0';
   //    psender=&sender;
 
   u_int64_t istart, istop;
@@ -513,12 +514,18 @@ int main(int argc, char *argv[])
         sender.depttime.tv_sec = PktDept.tv_sec;
         sender.depttime.tv_usec = PktDept.tv_usec;
         istart = realcc();
+        /* choose packet size from distribution */
+        int pktlen = (int)floor(myRND1->Rnd());
+        if (pktlen <= 0)
+          pktlen = size2; /* fallback to configured size2 */
+        if (pktlen > (int)sizeof(sender))
+          pktlen = (int)sizeof(sender);
         if (quiet == 1 || dflag)
         {
           printf("[%d] sender.depttime.tv_sec = %06ld sender.depttime.tv_usec = %llu \n", di, (int)sender.depttime.tv_sec, sender.depttime.tv_usec);
           printf("             PktDept.tv_sec = %06ld PktDept.tv_usec = %06ld\n", PktDept.tv_sec, PktDept.tv_usec);
         }
-        rc = sendto(sd, &sender, size2, 0, (struct sockaddr *)&remoteServAddr, sizeof(remoteServAddr)); // size1> app head
+        rc = sendto(sd, &sender, pktlen, 0, (struct sockaddr *)&remoteServAddr, sizeof(remoteServAddr)); // send chosen packet size
         istop = realcc();
         gettimeofday(&PktDept, NULL);
         if (rc < 0)
@@ -559,7 +566,13 @@ int main(int argc, char *argv[])
           printf("[%d] sender.depttime.tv_sec = %06ld sender.depttime.tv_usec = %06ld \n", (int)di, (int)sender.depttime.tv_sec, (int)sender.depttime.tv_usec);
           printf("             PktDept.tv_sec = %06ld PktDept.tv_usec = %06ld\n", PktDept.tv_sec, PktDept.tv_usec);
         }
-        rc = sendto(sd, &sender, size2, 0, (struct sockaddr *)&remoteServAddr, sizeof(remoteServAddr)); // size1> app head
+        /* choose packet size from distribution */
+        int pktlen = (int)floor(myRND1->Rnd());
+        if (pktlen <= 0)
+          pktlen = size2;
+        if (pktlen > (int)sizeof(sender))
+          pktlen = (int)sizeof(sender);
+        rc = sendto(sd, &sender, pktlen, 0, (struct sockaddr *)&remoteServAddr, sizeof(remoteServAddr)); // size1> app head
         istop = realcc();
         gettimeofday(&PktDept, NULL);
         if (rc < 0)
