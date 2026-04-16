@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
   //  int vvv;//added today
   ///   vvv = (sizeof(zzz)/lent);//***today
   // randexpo(zzz,vvv);//***
-  int option_index, op, sd, rc, hflag, dflag, REMOTE_SERVER_PORT, reqFlag;
+  int option_index, op, sd, rc, hflag, dflag, REMOTE_SERVER_PORT, reqFlag, varySource;
   double waittime, waittime1, sleepTime, sleepTime1;
   //  double linkCapacity;
   struct sockaddr_in cliAddr, remoteServAddr;
@@ -85,6 +85,7 @@ int main(int argc, char *argv[])
       {"keyid ", required_argument, 0, 'r'},
       {"runid ", required_argument, 0, 'k'},
       {"server", required_argument, 0, 's'},
+      {"vary-source", no_argument, 0, 'B'},
       {"port", required_argument, 0, 'p'},
       {"pkts", required_argument, 0, 'n'},
       {"pktdist", required_argument, 0, 'm'},
@@ -118,10 +119,14 @@ int main(int argc, char *argv[])
   sleepTime = -1;
   size2 = 1224;
   waittime = 0;
-  while ((op = getopt_long(argc, argv, "a:b:qk:e:r:s:p:n:m:l:L:v:i:w:W:z:hDdV", long_options, &option_index)) != EOF)
+  varySource = 0;
+  while ((op = getopt_long(argc, argv, "a:b:qk:e:r:s:p:n:m:l:L:v:i:w:W:z:hDdVB", long_options, &option_index)) != EOF)
   {
     switch (op)
     {
+    case 'B': /* vary source port every send */
+      varySource = 1;
+      break;
     case 'b': /* Set Source port */
       SOURCE_PORT = atoi(optarg);
       break;
@@ -246,6 +251,8 @@ int main(int argc, char *argv[])
       printf(" -s (--server) Destination Server [required] \n");
       printf(" -p (--port) <Destination Port> [optional default = 1500] \n");
       printf(" -b (--sourceport) <Source Port> [optional default = 0, ephemeral \n");
+      printf(" -B (--vary-source) Use a different source port for every send\n");
+      printf(" -q (--quiet) Suppress non-error output (run silently)\n");
       printf(" -n (--pkts) <Number of packets to send> [optional default = forever]\n");
       printf(" -l (--pktLenmin) <Packet Length> [bytes] [optional default = 1224]\n");
       printf(" -L (--pktLenmax) <Packet Length> [bytes] [optional default = 1224]\n");
@@ -401,31 +408,37 @@ int main(int argc, char *argv[])
   memcpy((char *)&remoteServAddr.sin_addr.s_addr, h->h_addr_list[0], h->h_length);
   remoteServAddr.sin_port = htons(REMOTE_SERVER_PORT);
 
-  /* socket creation */
-  sd = socket(AF_INET, SOCK_DGRAM, 0);
-  if (sd < 0)
+  /* socket creation (unless varying per-send) */
+  if (!varySource)
   {
-    printf("%s: cannot open socket \n", argv[0]);
-    exit(1);
+    sd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sd < 0)
+    {
+      printf("%s: cannot open socket \n", argv[0]);
+      exit(1);
+    }
+
+    /* bind any port */
+    cliAddr.sin_family = AF_INET;
+    cliAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    cliAddr.sin_port = htons(SOURCE_PORT);
+
+    rc = bind(sd, (struct sockaddr *)&cliAddr, sizeof(cliAddr));
+    if (rc < 0)
+    {
+      printf("%s: cannot bind port\n", argv[0]);
+      exit(1);
+    }
+
+    socklen_t len = sizeof(myAddr);
+    rc = getsockname(sd, (struct sockaddr *)&myAddr, &len);
+    printf("Src port : %d \n", ntohs(myAddr.sin_port));
   }
-
-  /* bind any port */
-  cliAddr.sin_family = AF_INET;
-  cliAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-  cliAddr.sin_port = htons(SOURCE_PORT);
-
-  rc = bind(sd, (struct sockaddr *)&cliAddr, sizeof(cliAddr));
-  if (rc < 0)
+  else
   {
-    printf("%s: cannot bind port\n", argv[0]);
-    exit(1);
+    /* When varying source port each send, socket will be created per-packet. */
+    sd = -1;
   }
-  printf("Src port : %d \n", ntohs(cliAddr.sin_port));
-
-  socklen_t len;
-  len = 128;
-
-  rc = getsockname(sd, (struct sockaddr *)&myAddr, &len);
 
   transfer_data sender;
   // transfer_data *psender;
@@ -525,7 +538,48 @@ int main(int argc, char *argv[])
           printf("[%d] sender.depttime.tv_sec = %06ld sender.depttime.tv_usec = %llu \n", di, (int)sender.depttime.tv_sec, sender.depttime.tv_usec);
           printf("             PktDept.tv_sec = %06ld PktDept.tv_usec = %06ld\n", PktDept.tv_sec, PktDept.tv_usec);
         }
-        rc = sendto(sd, &sender, pktlen, 0, (struct sockaddr *)&remoteServAddr, sizeof(remoteServAddr)); // send chosen packet size
+        if (varySource)
+        {
+          int use_sd = socket(AF_INET, SOCK_DGRAM, 0);
+          if (use_sd < 0)
+          {
+            printf("%s: cannot open socket \n", argv[0]);
+            exit(1);
+          }
+          struct sockaddr_in perCli;
+          perCli.sin_family = AF_INET;
+          perCli.sin_addr.s_addr = htonl(INADDR_ANY);
+          int portnum = 0;
+          if (SOURCE_PORT > 0)
+          {
+            long p = SOURCE_PORT + (long)di;
+            if (p > 65535)
+              p = 1024 + (p % (65535 - 1024));
+            if (p < 1)
+              p = 1;
+            portnum = (int)p;
+          }
+          perCli.sin_port = htons(portnum);
+          rc = bind(use_sd, (struct sockaddr *)&perCli, sizeof(perCli));
+          if (rc < 0)
+          {
+            printf("%s: cannot bind port\n", argv[0]);
+            close(use_sd);
+            exit(1);
+          }
+          if (quiet == 0)
+          {
+            socklen_t plen = sizeof(perCli);
+            getsockname(use_sd, (struct sockaddr *)&perCli, &plen);
+            printf("Src port : %d \n", ntohs(perCli.sin_port));
+          }
+          rc = sendto(use_sd, &sender, pktlen, 0, (struct sockaddr *)&remoteServAddr, sizeof(remoteServAddr)); // send chosen packet size
+          close(use_sd);
+        }
+        else
+        {
+          rc = sendto(sd, &sender, pktlen, 0, (struct sockaddr *)&remoteServAddr, sizeof(remoteServAddr)); // send chosen packet size
+        }
         istop = realcc();
         gettimeofday(&PktDept, NULL);
         if (rc < 0)
@@ -572,7 +626,48 @@ int main(int argc, char *argv[])
           pktlen = size2;
         if (pktlen > (int)sizeof(sender))
           pktlen = (int)sizeof(sender);
-        rc = sendto(sd, &sender, pktlen, 0, (struct sockaddr *)&remoteServAddr, sizeof(remoteServAddr)); // size1> app head
+        if (varySource)
+        {
+          int use_sd = socket(AF_INET, SOCK_DGRAM, 0);
+          if (use_sd < 0)
+          {
+            printf("%s: cannot open socket \n", argv[0]);
+            exit(1);
+          }
+          struct sockaddr_in perCli;
+          perCli.sin_family = AF_INET;
+          perCli.sin_addr.s_addr = htonl(INADDR_ANY);
+          int portnum = 0;
+          if (SOURCE_PORT > 0)
+          {
+            long p = SOURCE_PORT + (long)di;
+            if (p > 65535)
+              p = 1024 + (p % (65535 - 1024));
+            if (p < 1)
+              p = 1;
+            portnum = (int)p;
+          }
+          perCli.sin_port = htons(portnum);
+          rc = bind(use_sd, (struct sockaddr *)&perCli, sizeof(perCli));
+          if (rc < 0)
+          {
+            printf("%s: cannot bind port\n", argv[0]);
+            close(use_sd);
+            exit(1);
+          }
+          if (quiet == 0)
+          {
+            socklen_t plen = sizeof(perCli);
+            getsockname(use_sd, (struct sockaddr *)&perCli, &plen);
+            printf("Src port : %d \n", ntohs(perCli.sin_port));
+          }
+          rc = sendto(use_sd, &sender, pktlen, 0, (struct sockaddr *)&remoteServAddr, sizeof(remoteServAddr)); // size1> app head
+          close(use_sd);
+        }
+        else
+        {
+          rc = sendto(sd, &sender, pktlen, 0, (struct sockaddr *)&remoteServAddr, sizeof(remoteServAddr)); // size1> app head
+        }
         istop = realcc();
         gettimeofday(&PktDept, NULL);
         if (rc < 0)
